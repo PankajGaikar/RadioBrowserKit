@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// Sorting order options.
+/// Sorting order options for Radio Browser API queries.
 public enum SortOrder: String, Codable, Sendable {
     case name
     case url

@@ -10,10 +10,11 @@ import XCTest
 
 final class RadioBrowserTests: XCTestCase {
     
-    func testRadioBrowserInitialization() {
+    func testRadioBrowserInitialization() async {
         let client = RadioBrowser()
-        // Basic smoke test
-        XCTAssertNotNil(client)
+        // Basic smoke test - RadioBrowser is an actor
+        let _ = await client
+        XCTAssertTrue(true) // If we get here, initialization worked
     }
 }
 

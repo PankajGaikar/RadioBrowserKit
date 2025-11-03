@@ -500,6 +500,46 @@ public actor RadioBrowser {
         }
     }
     
+    // MARK: - Interactions (Write APIs)
+    
+    /// Records a click for a station (increments click count).
+    /// 
+    /// Rate limit: Once per day per IP address.
+    /// - Parameter stationUUID: The UUID of the station.
+    /// - Returns: Click response with resolved URL.
+    public func click(stationUUID: String) async throws -> ClickResponse {
+        return try await client.get(path: "/json/url/\(stationUUID)")
+    }
+    
+    /// Records a vote for a station (increments vote count).
+    /// 
+    /// Rate limit: Once every 10 minutes per IP address.
+    /// - Parameter stationUUID: The UUID of the station.
+    /// - Returns: Vote response with updated vote count.
+    public func vote(stationUUID: String) async throws -> VoteResponse {
+        return try await client.get(path: "/json/vote/\(stationUUID)")
+    }
+    
+    /// Adds a new station to the Radio Browser database.
+    /// 
+    /// The request will be validated before sending:
+    /// - `name` and `url` are required.
+    /// - URLs will be validated and encoded.
+    /// - Parameter request: The station information to add.
+    /// - Returns: Response with the UUID of the newly created station.
+    /// - Throws: `RadioBrowserError.invalidRequest` if validation fails.
+    public func addStation(_ request: AddStationRequest) async throws -> AddStationResponse {
+        // Validate request before sending
+        try request.validate()
+        
+        // Validate URL format
+        guard let url = URL(string: request.url), url.scheme != nil else {
+            throw RadioBrowserError.invalidRequest("Invalid URL format: \(request.url)")
+        }
+        
+        return try await client.post(path: "/json/add", body: request)
+    }
+    
     // MARK: - Service Info Endpoints
     
     /// Gets server statistics.

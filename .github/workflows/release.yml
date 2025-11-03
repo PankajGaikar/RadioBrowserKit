@@ -38,7 +38,7 @@ jobs:
           ## Installation
           
           ```swift
-          .package(url: "https://github.com/yourusername/RadioBrowserKit.git", from: "${{ steps.version.outputs.version }}")
+          .package(url: "https://github.com/PankajGaikar/RadioBrowserKit.git", from: "${{ steps.version.outputs.version }}")
           ```
         draft: false
         prerelease: false

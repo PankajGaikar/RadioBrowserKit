@@ -24,6 +24,7 @@ let package = Package(
             name: "RadioBrowserKitTests",
             dependencies: ["RadioBrowserKit"],
             resources: [.copy("Fixtures")]),
-    ]
+    ],
+    swiftLanguageVersions: [.v5]
 )
 

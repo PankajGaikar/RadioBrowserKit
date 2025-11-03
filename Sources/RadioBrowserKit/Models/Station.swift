@@ -126,9 +126,24 @@ public struct Station: Codable, Sendable, Identifiable {
         tags = try container.decodeIfPresent(String.self, forKey: .tags)
         codec = try container.decodeIfPresent(String.self, forKey: .codec)
         bitrate = try container.decodeIfPresent(Int.self, forKey: .bitrate)
-        hls = try container.decodeIfPresent(Bool.self, forKey: .hls)
+        // Handle hls as Int (0/1) or Bool
+        if let hlsInt = try container.decodeIfPresent(Int.self, forKey: .hls) {
+            hls = hlsInt != 0
+        } else if let hlsBool = try container.decodeIfPresent(Bool.self, forKey: .hls) {
+            hls = hlsBool
+        } else {
+            hls = nil
+        }
         votes = try container.decodeIfPresent(Int.self, forKey: .votes)
-        lastcheckok = try container.decodeIfPresent(Bool.self, forKey: .lastcheckok)
+        
+        // Handle lastcheckok as Int (0/1) or Bool
+        if let checkOkInt = try container.decodeIfPresent(Int.self, forKey: .lastcheckok) {
+            lastcheckok = checkOkInt != 0
+        } else if let checkOkBool = try container.decodeIfPresent(Bool.self, forKey: .lastcheckok) {
+            lastcheckok = checkOkBool
+        } else {
+            lastcheckok = nil
+        }
         
         // Handle Unix timestamp decoding
         if let timestamp = try container.decodeIfPresent(TimeInterval.self, forKey: .lastchecktime) {
@@ -142,7 +157,15 @@ public struct Station: Codable, Sendable, Identifiable {
         geoLat = try container.decodeIfPresent(Double.self, forKey: .geoLat)
         geoLong = try container.decodeIfPresent(Double.self, forKey: .geoLong)
         geoDistance = try container.decodeIfPresent(Double.self, forKey: .geoDistance)
-        hasExtendedInfo = try container.decodeIfPresent(Bool.self, forKey: .hasExtendedInfo)
+        
+        // Handle hasExtendedInfo as Int (0/1) or Bool
+        if let extendedInt = try container.decodeIfPresent(Int.self, forKey: .hasExtendedInfo) {
+            hasExtendedInfo = extendedInt != 0
+        } else if let extendedBool = try container.decodeIfPresent(Bool.self, forKey: .hasExtendedInfo) {
+            hasExtendedInfo = extendedBool
+        } else {
+            hasExtendedInfo = nil
+        }
         
         if let timestamp = try container.decodeIfPresent(TimeInterval.self, forKey: .added) {
             added = Date(timeIntervalSince1970: timestamp)

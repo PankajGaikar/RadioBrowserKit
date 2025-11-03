@@ -1,0 +1,13 @@
+[
+  {
+    "name": "California",
+    "country": "United States",
+    "stationcount": 1234
+  },
+  {
+    "name": "New York",
+    "country": "United States",
+    "stationcount": 987
+  }
+]
+

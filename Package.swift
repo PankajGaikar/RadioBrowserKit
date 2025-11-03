@@ -22,7 +22,8 @@ let package = Package(
             dependencies: []),
         .testTarget(
             name: "RadioBrowserKitTests",
-            dependencies: ["RadioBrowserKit"]),
+            dependencies: ["RadioBrowserKit"],
+            resources: [.copy("Fixtures")]),
     ]
 )
 

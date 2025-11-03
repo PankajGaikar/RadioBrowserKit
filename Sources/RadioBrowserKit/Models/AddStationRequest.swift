@@ -44,6 +44,36 @@ public struct AddStationRequest: Codable, Sendable {
         case tags
     }
     
+    /// Initialize an AddStationRequest.
+    /// - Parameters:
+    ///   - name: Station name (required).
+    ///   - url: Stream URL (required).
+    ///   - homepage: Homepage URL (optional).
+    ///   - favicon: Favicon URL (optional).
+    ///   - countrycode: Country code (optional).
+    ///   - state: State or region (optional).
+    ///   - language: Language(s) (optional).
+    ///   - tags: Tags (optional).
+    public init(
+        name: String,
+        url: String,
+        homepage: String? = nil,
+        favicon: String? = nil,
+        countrycode: String? = nil,
+        state: String? = nil,
+        language: String? = nil,
+        tags: String? = nil
+    ) {
+        self.name = name
+        self.url = url
+        self.homepage = homepage
+        self.favicon = favicon
+        self.countrycode = countrycode
+        self.state = state
+        self.language = language
+        self.tags = tags
+    }
+    
     /// Validates that required fields are present.
     public func validate() throws {
         guard !name.isEmpty else {

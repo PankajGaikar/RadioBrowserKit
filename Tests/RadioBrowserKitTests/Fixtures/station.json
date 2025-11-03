@@ -1,0 +1,28 @@
+{
+  "changeuuid": "960e29ac-0601-11e8-ae97-52543be04c81",
+  "stationuuid": "960e29ac-0601-11e8-ae97-52543be04c81",
+  "name": "Radio Paradise",
+  "url": "http://stream.radioparadise.com/mp3-192",
+  "url_resolved": "http://stream.radioparadise.com/mp3-192",
+  "homepage": "https://radioparadise.com/",
+  "favicon": "https://radioparadise.com/favicon.ico",
+  "tags": "rock,pop,eclectic",
+  "country": "United States",
+  "countrycode": "US",
+  "state": "California",
+  "language": "English",
+  "codec": "MP3",
+  "bitrate": 192,
+  "hls": 0,
+  "votes": 1234,
+  "lastcheckok": 1,
+  "lastchecktime": 1704067200,
+  "clickcount": 5678,
+  "clicktrend": 12,
+  "geo_lat": 37.7749,
+  "geo_long": -122.4194,
+  "has_extended_info": 1,
+  "added": 1514764800,
+  "lastchangetime": 1704067200
+}
+

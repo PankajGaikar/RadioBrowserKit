@@ -1,0 +1,15 @@
+[
+  {
+    "name": "de1.api.radio-browser.info",
+    "url": "https://de1.api.radio-browser.info",
+    "ip": "1.2.3.4",
+    "location": "Germany"
+  },
+  {
+    "name": "at1.api.radio-browser.info",
+    "url": "https://at1.api.radio-browser.info",
+    "ip": "5.6.7.8",
+    "location": "Austria"
+  }
+]
+

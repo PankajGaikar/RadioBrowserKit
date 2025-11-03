@@ -540,6 +540,39 @@ public actor RadioBrowser {
         return try await client.post(path: "/json/add", body: request)
     }
     
+    // MARK: - Diagnostics & History
+    
+    /// Gets click history records.
+    /// - Parameters:
+    ///   - stationUUID: Optional station UUID to filter clicks for a specific station. If nil, returns all clicks.
+    ///   - seconds: Optional time window in seconds to limit clicks to recent period.
+    ///   - lastClickUUID: Optional UUID of the last click received (for pagination). Used to fetch the next page of results.
+    /// - Returns: Array of click records.
+    /// 
+    /// Use `lastClickUUID` for pagination: pass the UUID from the last item of the previous response to get the next page.
+    public func clicks(
+        stationUUID: String? = nil,
+        seconds: Int? = nil,
+        lastClickUUID: String? = nil
+    ) async throws -> [StationClick] {
+        var params: [String: String] = [:]
+        
+        if let stationUUID = stationUUID {
+            params["stationuuid"] = stationUUID
+        }
+        if let seconds = seconds {
+            params["seconds"] = String(seconds)
+        }
+        if let lastClickUUID = lastClickUUID {
+            params["lastclickuuid"] = lastClickUUID
+        }
+        
+        return try await client.get(
+            path: "/json/clicks",
+            additionalParams: params
+        )
+    }
+    
     // MARK: - Service Info Endpoints
     
     /// Gets server statistics.

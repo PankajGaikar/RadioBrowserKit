@@ -30,9 +30,11 @@ internal actor MirrorSelector {
         if let envOverride = ProcessInfo.processInfo.environment["RADIO_BROWSER_BASE_URL"] {
             self.currentMirror = envOverride
             self.hasDiscoveredMirrors = true
+            RadioBrowserLogger.log(.notice, .mirrors, "Using environment override mirror: \(envOverride)")
         } else if let preferredMirror = preferredMirror {
             self.currentMirror = preferredMirror
             self.hasDiscoveredMirrors = true
+            RadioBrowserLogger.log(.notice, .mirrors, "Using preferred mirror: \(preferredMirror)")
         }
     }
     
@@ -59,6 +61,8 @@ internal actor MirrorSelector {
     
     /// Discovers an available mirror by querying the servers endpoint.
     private func discoverMirror() async throws {
+        RadioBrowserLogger.log(.debug, .mirrors, "Discovering mirrors from \(Self.fallbackBaseURL)...")
+        
         let serversURL = URL(string: "\(Self.fallbackBaseURL)/json/servers")!
         
         let (data, response) = try await URLSession.shared.data(from: serversURL)
@@ -66,6 +70,7 @@ internal actor MirrorSelector {
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200 else {
             // If discovery fails, fall back to the default
+            RadioBrowserLogger.log(.warn, .mirrors, "Mirror discovery failed, falling back to default: \(Self.fallbackBaseURL)")
             currentMirror = Self.fallbackBaseURL
             return
         }
@@ -76,21 +81,26 @@ internal actor MirrorSelector {
             // Pick a random mirror if available
             if let randomMirror = mirrors.randomElement() {
                 currentMirror = randomMirror.url
+                RadioBrowserLogger.log(.info, .mirrors, "Selected mirror: \(randomMirror.url) (\(randomMirror.name))")
             } else {
                 // Fall back to default if no mirrors found
+                RadioBrowserLogger.log(.warn, .mirrors, "No mirrors found, falling back to default: \(Self.fallbackBaseURL)")
                 currentMirror = Self.fallbackBaseURL
             }
         } catch {
             // If decoding fails, fall back to default
+            RadioBrowserLogger.log(.error, .mirrors, "Failed to decode mirrors: \(error.localizedDescription), falling back to default")
             currentMirror = Self.fallbackBaseURL
         }
     }
     
     /// Forces re-discovery of mirrors (useful for retry scenarios).
     func reset() {
+        let oldMirror = currentMirror
         hasDiscoveredMirrors = false
         if preferredMirror == nil && ProcessInfo.processInfo.environment["RADIO_BROWSER_BASE_URL"] == nil {
             currentMirror = nil
+            RadioBrowserLogger.log(.warn, .mirrors, "Mirror reset requested (was: \(oldMirror ?? "none"))")
         }
     }
 }

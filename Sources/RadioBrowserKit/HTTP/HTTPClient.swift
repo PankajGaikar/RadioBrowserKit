@@ -102,8 +102,31 @@ internal actor HTTPClient {
     /// - Parameter request: The URL request to perform.
     /// - Returns: Decoded response of type T.
     private func perform<T: Decodable>(request: URLRequest) async throws -> T {
+        let requestID = UUID().uuidString.prefix(8)
+        let startTime = Date()
+        let method = request.httpMethod ?? "GET"
+        let path = request.url?.path ?? "unknown"
+        let baseURL = try await mirrorSelector.getBaseURL()
+        
+        // Log request start
+        var requestMsg = "➡️ [\(requestID)] \(method) \(path) on mirror=\(baseURL)"
+        if let query = request.url?.query {
+            let redacted = LoggingHelpers.redactQuery(query, redactPII: RadioBrowserLogger.configuration.redactPII)
+            requestMsg += "?\(redacted)"
+        }
+        RadioBrowserLogger.log(.debug, .network, requestMsg)
+        
+        // Log cURL if enabled
+        if RadioBrowserLogger.configuration.emitCURL {
+            let curlCmd = LoggingHelpers.cURLCommand(from: request, redactHeaders: true)
+            RadioBrowserLogger.log(.debug, .network, curlCmd)
+        }
+        
         do {
             let (data, response) = try await session.data(for: request)
+            let elapsed = Date().timeIntervalSince(startTime)
+            let latencyMs = Int(elapsed * 1000)
+            let dataSizeKB = Double(data.count) / 1024.0
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw RadioBrowserError.transport(NSError(domain: "RadioBrowserKit", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response type"]))
@@ -113,35 +136,48 @@ internal actor HTTPClient {
             switch httpResponse.statusCode {
             case 200...299:
                 // Success - decode the response
+                RadioBrowserLogger.log(.info, .network, "✅ [\(requestID)] \(httpResponse.statusCode) in \(latencyMs)ms bytes=\(String(format: "%.1f", dataSizeKB))KB")
+                
                 do {
                     let decoder = JSONDecoder()
                     // Handle Unix timestamp decoding if needed
                     decoder.dateDecodingStrategy = .secondsSince1970
                     return try decoder.decode(T.self, from: data)
                 } catch {
+                    RadioBrowserLogger.log(.error, .decode, "❌ [\(requestID)] Decoding error: \(error.localizedDescription)")
                     throw RadioBrowserError.decoding(error)
                 }
                 
             case 404:
+                RadioBrowserLogger.log(.warn, .network, "⚠️ [\(requestID)] \(httpResponse.statusCode) in \(latencyMs)ms: Not Found")
                 throw RadioBrowserError.notFound
                 
             case 429:
+                RadioBrowserLogger.log(.warn, .network, "⚠️ [\(requestID)] \(httpResponse.statusCode) in \(latencyMs)ms: Rate Limited")
                 throw RadioBrowserError.rateLimited
                 
             case 500...599:
                 // Try to reset mirror on server errors
+                RadioBrowserLogger.log(.error, .network, "❌ [\(requestID)] \(httpResponse.statusCode) in \(latencyMs)ms: Server Error")
                 await mirrorSelector.reset()
                 throw RadioBrowserError.serverUnavailable
                 
             default:
                 // Try to decode error message if available
                 let errorMessage = String(data: data, encoding: .utf8) ?? "HTTP \(httpResponse.statusCode)"
+                RadioBrowserLogger.log(.error, .network, "❌ [\(requestID)] \(httpResponse.statusCode) in \(latencyMs)ms: \(errorMessage)")
                 throw RadioBrowserError.apiResponse(errorMessage)
             }
         } catch let error as RadioBrowserError {
+            let elapsed = Date().timeIntervalSince(startTime)
+            let latencyMs = Int(elapsed * 1000)
+            RadioBrowserLogger.log(.error, .network, "❌ [\(requestID)] Error in \(latencyMs)ms: \(error)")
             throw error
         } catch {
             // Network errors
+            let elapsed = Date().timeIntervalSince(startTime)
+            let latencyMs = Int(elapsed * 1000)
+            RadioBrowserLogger.log(.error, .network, "❌ [\(requestID)] Transport error in \(latencyMs)ms: \(error.localizedDescription)")
             throw RadioBrowserError.transport(error)
         }
     }

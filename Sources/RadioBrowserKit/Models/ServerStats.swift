@@ -40,7 +40,11 @@ public struct ServerStats: Codable, Sendable {
         supportedCountries = try container.decodeIfPresent(Int.self, forKey: .supportedCountries)
         supportedClicks = try container.decodeIfPresent(Int.self, forKey: .supportedClicks)
         
+        // Handle timestamp as TimeInterval (number) or String
         if let timestamp = try container.decodeIfPresent(TimeInterval.self, forKey: .lastUpdate) {
+            lastUpdate = Date(timeIntervalSince1970: timestamp)
+        } else if let timestampString = try container.decodeIfPresent(String.self, forKey: .lastUpdate),
+                  let timestamp = TimeInterval(timestampString) {
             lastUpdate = Date(timeIntervalSince1970: timestamp)
         } else {
             lastUpdate = nil

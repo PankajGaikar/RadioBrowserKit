@@ -505,19 +505,47 @@ public actor RadioBrowser {
     /// Records a click for a station (increments click count).
     /// 
     /// Rate limit: Once per day per IP address.
+    /// 
+    /// Note: The API returns the Station object with updated click information.
+    /// This method converts it to ClickResponse format.
     /// - Parameter stationUUID: The UUID of the station.
     /// - Returns: Click response with resolved URL.
     public func click(stationUUID: String) async throws -> ClickResponse {
-        return try await client.get(path: "/json/url/\(stationUUID)")
+        // API returns Station array, extract first and convert to ClickResponse
+        let stations: [Station] = try await client.get(path: "/json/url/\(stationUUID)")
+        guard let station = stations.first else {
+            throw RadioBrowserError.apiResponse("Empty response from click endpoint")
+        }
+        
+        return ClickResponse(
+            stationuuid: station.stationuuid,
+            url: station.urlResolved ?? station.url,
+            ok: station.lastcheckok ?? true,
+            message: nil
+        )
     }
     
     /// Records a vote for a station (increments vote count).
     /// 
     /// Rate limit: Once every 10 minutes per IP address.
+    /// 
+    /// Note: The API returns the Station object with updated vote information.
+    /// This method converts it to VoteResponse format.
     /// - Parameter stationUUID: The UUID of the station.
     /// - Returns: Vote response with updated vote count.
     public func vote(stationUUID: String) async throws -> VoteResponse {
-        return try await client.get(path: "/json/vote/\(stationUUID)")
+        // API returns Station array, extract first and convert to VoteResponse
+        let stations: [Station] = try await client.get(path: "/json/vote/\(stationUUID)")
+        guard let station = stations.first else {
+            throw RadioBrowserError.apiResponse("Empty response from vote endpoint")
+        }
+        
+        return VoteResponse(
+            stationuuid: station.stationuuid,
+            votes: station.votes ?? 0,
+            ok: station.lastcheckok ?? true,
+            message: nil
+        )
     }
     
     /// Adds a new station to the Radio Browser database.

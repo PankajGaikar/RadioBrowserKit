@@ -81,7 +81,7 @@ internal actor MirrorSelector {
             // Pick a random mirror if available
             if let randomMirror = mirrors.randomElement() {
                 currentMirror = randomMirror.url
-                RadioBrowserLogger.log(.info, .mirrors, "Selected mirror: \(randomMirror.url) (\(randomMirror.name))")
+                RadioBrowserLogger.log(.info, .mirrors, "Selected mirror: \(randomMirror.url ?? "unknown") (\(randomMirror.name))")
             } else {
                 // Fall back to default if no mirrors found
                 RadioBrowserLogger.log(.warn, .mirrors, "No mirrors found, falling back to default: \(Self.fallbackBaseURL)")

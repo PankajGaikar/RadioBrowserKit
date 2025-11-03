@@ -29,5 +29,13 @@ public struct VoteResponse: Codable, Sendable, Identifiable {
         case ok
         case message
     }
+    
+    /// Initialize a VoteResponse.
+    public init(stationuuid: String, votes: Int, ok: Bool, message: String? = nil) {
+        self.stationuuid = stationuuid
+        self.votes = votes
+        self.ok = ok
+        self.message = message
+    }
 }
 

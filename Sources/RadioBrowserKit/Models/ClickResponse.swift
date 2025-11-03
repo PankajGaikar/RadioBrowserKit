@@ -29,5 +29,13 @@ public struct ClickResponse: Codable, Sendable, Identifiable {
         case ok
         case message
     }
+    
+    /// Initialize a ClickResponse.
+    public init(stationuuid: String, url: String, ok: Bool, message: String? = nil) {
+        self.stationuuid = stationuuid
+        self.url = url
+        self.ok = ok
+        self.message = message
+    }
 }
 

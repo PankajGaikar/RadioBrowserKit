@@ -145,8 +145,11 @@ public struct Station: Codable, Sendable, Identifiable {
             lastcheckok = nil
         }
         
-        // Handle Unix timestamp decoding
+        // Handle Unix timestamp decoding (can be string or number)
         if let timestamp = try container.decodeIfPresent(TimeInterval.self, forKey: .lastchecktime) {
+            lastchecktime = Date(timeIntervalSince1970: timestamp)
+        } else if let timestampString = try container.decodeIfPresent(String.self, forKey: .lastchecktime),
+                  let timestamp = TimeInterval(timestampString) {
             lastchecktime = Date(timeIntervalSince1970: timestamp)
         } else {
             lastchecktime = nil
@@ -167,13 +170,21 @@ public struct Station: Codable, Sendable, Identifiable {
             hasExtendedInfo = nil
         }
         
+        // Handle added timestamp (can be string or number)
         if let timestamp = try container.decodeIfPresent(TimeInterval.self, forKey: .added) {
+            added = Date(timeIntervalSince1970: timestamp)
+        } else if let timestampString = try container.decodeIfPresent(String.self, forKey: .added),
+                  let timestamp = TimeInterval(timestampString) {
             added = Date(timeIntervalSince1970: timestamp)
         } else {
             added = nil
         }
         
+        // Handle lastchangetime timestamp (can be string or number)
         if let timestamp = try container.decodeIfPresent(TimeInterval.self, forKey: .lastchangetime) {
+            lastchangetime = Date(timeIntervalSince1970: timestamp)
+        } else if let timestampString = try container.decodeIfPresent(String.self, forKey: .lastchangetime),
+                  let timestamp = TimeInterval(timestampString) {
             lastchangetime = Date(timeIntervalSince1970: timestamp)
         } else {
             lastchangetime = nil

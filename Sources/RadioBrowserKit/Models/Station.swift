@@ -127,30 +127,43 @@ public struct Station: Codable, Sendable, Identifiable {
         codec = try container.decodeIfPresent(String.self, forKey: .codec)
         bitrate = try container.decodeIfPresent(Int.self, forKey: .bitrate)
         // Handle hls as Int (0/1) or Bool
-        if let hlsInt = try container.decodeIfPresent(Int.self, forKey: .hls) {
-            hls = hlsInt != 0
-        } else if let hlsBool = try container.decodeIfPresent(Bool.self, forKey: .hls) {
-            hls = hlsBool
+        if container.contains(.hls) {
+            if let hlsInt = try? container.decode(Int.self, forKey: .hls) {
+                hls = hlsInt != 0
+            } else if let hlsBool = try? container.decode(Bool.self, forKey: .hls) {
+                hls = hlsBool
+            } else {
+                hls = nil
+            }
         } else {
             hls = nil
         }
         votes = try container.decodeIfPresent(Int.self, forKey: .votes)
         
         // Handle lastcheckok as Int (0/1) or Bool
-        if let checkOkInt = try container.decodeIfPresent(Int.self, forKey: .lastcheckok) {
-            lastcheckok = checkOkInt != 0
-        } else if let checkOkBool = try container.decodeIfPresent(Bool.self, forKey: .lastcheckok) {
-            lastcheckok = checkOkBool
+        if container.contains(.lastcheckok) {
+            if let checkOkInt = try? container.decode(Int.self, forKey: .lastcheckok) {
+                lastcheckok = checkOkInt != 0
+            } else if let checkOkBool = try? container.decode(Bool.self, forKey: .lastcheckok) {
+                lastcheckok = checkOkBool
+            } else {
+                lastcheckok = nil
+            }
         } else {
             lastcheckok = nil
         }
         
         // Handle Unix timestamp decoding (can be string or number)
-        if let timestamp = try container.decodeIfPresent(TimeInterval.self, forKey: .lastchecktime) {
-            lastchecktime = Date(timeIntervalSince1970: timestamp)
-        } else if let timestampString = try container.decodeIfPresent(String.self, forKey: .lastchecktime),
-                  let timestamp = TimeInterval(timestampString) {
-            lastchecktime = Date(timeIntervalSince1970: timestamp)
+        // Try TimeInterval first, if it fails (type mismatch), try String
+        if container.contains(.lastchecktime) {
+            if let timestamp = try? container.decode(TimeInterval.self, forKey: .lastchecktime) {
+                lastchecktime = Date(timeIntervalSince1970: timestamp)
+            } else if let timestampString = try? container.decode(String.self, forKey: .lastchecktime),
+                      let timestamp = TimeInterval(timestampString) {
+                lastchecktime = Date(timeIntervalSince1970: timestamp)
+            } else {
+                lastchecktime = nil
+            }
         } else {
             lastchecktime = nil
         }
@@ -162,30 +175,42 @@ public struct Station: Codable, Sendable, Identifiable {
         geoDistance = try container.decodeIfPresent(Double.self, forKey: .geoDistance)
         
         // Handle hasExtendedInfo as Int (0/1) or Bool
-        if let extendedInt = try container.decodeIfPresent(Int.self, forKey: .hasExtendedInfo) {
-            hasExtendedInfo = extendedInt != 0
-        } else if let extendedBool = try container.decodeIfPresent(Bool.self, forKey: .hasExtendedInfo) {
-            hasExtendedInfo = extendedBool
+        if container.contains(.hasExtendedInfo) {
+            if let extendedInt = try? container.decode(Int.self, forKey: .hasExtendedInfo) {
+                hasExtendedInfo = extendedInt != 0
+            } else if let extendedBool = try? container.decode(Bool.self, forKey: .hasExtendedInfo) {
+                hasExtendedInfo = extendedBool
+            } else {
+                hasExtendedInfo = nil
+            }
         } else {
             hasExtendedInfo = nil
         }
         
         // Handle added timestamp (can be string or number)
-        if let timestamp = try container.decodeIfPresent(TimeInterval.self, forKey: .added) {
-            added = Date(timeIntervalSince1970: timestamp)
-        } else if let timestampString = try container.decodeIfPresent(String.self, forKey: .added),
-                  let timestamp = TimeInterval(timestampString) {
-            added = Date(timeIntervalSince1970: timestamp)
+        if container.contains(.added) {
+            if let timestamp = try? container.decode(TimeInterval.self, forKey: .added) {
+                added = Date(timeIntervalSince1970: timestamp)
+            } else if let timestampString = try? container.decode(String.self, forKey: .added),
+                      let timestamp = TimeInterval(timestampString) {
+                added = Date(timeIntervalSince1970: timestamp)
+            } else {
+                added = nil
+            }
         } else {
             added = nil
         }
         
         // Handle lastchangetime timestamp (can be string or number)
-        if let timestamp = try container.decodeIfPresent(TimeInterval.self, forKey: .lastchangetime) {
-            lastchangetime = Date(timeIntervalSince1970: timestamp)
-        } else if let timestampString = try container.decodeIfPresent(String.self, forKey: .lastchangetime),
-                  let timestamp = TimeInterval(timestampString) {
-            lastchangetime = Date(timeIntervalSince1970: timestamp)
+        if container.contains(.lastchangetime) {
+            if let timestamp = try? container.decode(TimeInterval.self, forKey: .lastchangetime) {
+                lastchangetime = Date(timeIntervalSince1970: timestamp)
+            } else if let timestampString = try? container.decode(String.self, forKey: .lastchangetime),
+                      let timestamp = TimeInterval(timestampString) {
+                lastchangetime = Date(timeIntervalSince1970: timestamp)
+            } else {
+                lastchangetime = nil
+            }
         } else {
             lastchangetime = nil
         }

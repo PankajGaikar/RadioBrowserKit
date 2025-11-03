@@ -98,6 +98,117 @@ internal actor HTTPClient {
         return try await perform(request: request)
     }
     
+    /// Performs a GET request and returns raw data.
+    /// - Parameters:
+    ///   - path: The API endpoint path.
+    ///   - order: Optional sort order.
+    ///   - reverse: Whether to reverse the sort order.
+    ///   - offset: Pagination offset.
+    ///   - limit: Pagination limit.
+    ///   - hidebroken: Whether to hide broken stations.
+    ///   - additionalParams: Additional query parameters.
+    /// - Returns: Raw response data.
+    func getData(
+        path: String,
+        order: SortOrder? = nil,
+        reverse: Bool? = nil,
+        offset: Int? = nil,
+        limit: Int? = nil,
+        hidebroken: Bool? = nil,
+        additionalParams: [String: String] = [:]
+    ) async throws -> Data {
+        let baseURL = try await mirrorSelector.getBaseURL()
+        var request = try RequestBuilder.build(
+            baseURL: baseURL,
+            path: path,
+            order: order,
+            reverse: reverse,
+            offset: offset,
+            limit: limit,
+            hidebroken: hidebroken,
+            additionalParams: additionalParams
+        )
+        
+        request.httpMethod = "GET"
+        
+        return try await performRaw(request: request)
+    }
+    
+    /// Performs a URL request and returns raw data.
+    /// - Parameter request: The URL request to perform.
+    /// - Returns: Raw response data.
+    private func performRaw(request: URLRequest) async throws -> Data {
+        let requestID = UUID().uuidString.prefix(8)
+        let startTime = Date()
+        let method = request.httpMethod ?? "GET"
+        let path = request.url?.path ?? "unknown"
+        let baseURL = try await mirrorSelector.getBaseURL()
+        
+        // Log request start
+        var requestMsg = "➡️ [\(requestID)] \(method) \(path) on mirror=\(baseURL)"
+        if let query = request.url?.query {
+            let redacted = LoggingHelpers.redactQuery(query, redactPII: RadioBrowserLogger.configuration.redactPII)
+            requestMsg += "?\(redacted)"
+        }
+        RadioBrowserLogger.log(.debug, .network, requestMsg)
+        
+        // Log cURL if enabled
+        if RadioBrowserLogger.configuration.emitCURL {
+            let curlCmd = LoggingHelpers.cURLCommand(from: request, redactHeaders: true)
+            RadioBrowserLogger.log(.debug, .network, curlCmd)
+        }
+        
+        do {
+            let (data, response) = try await session.data(for: request)
+            let elapsed = Date().timeIntervalSince(startTime)
+            let latencyMs = Int(elapsed * 1000)
+            let dataSizeKB = Double(data.count) / 1024.0
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw RadioBrowserError.transport(NSError(domain: "RadioBrowserKit", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response type"]))
+            }
+            
+            // Handle HTTP status codes
+            switch httpResponse.statusCode {
+            case 200...299:
+                // Success - return raw data
+                RadioBrowserLogger.log(.info, .network, "✅ [\(requestID)] \(httpResponse.statusCode) in \(latencyMs)ms bytes=\(String(format: "%.1f", dataSizeKB))KB")
+                return data
+                
+            case 404:
+                RadioBrowserLogger.log(.warn, .network, "⚠️ [\(requestID)] \(httpResponse.statusCode) in \(latencyMs)ms: Not Found")
+                throw RadioBrowserError.notFound
+                
+            case 429:
+                RadioBrowserLogger.log(.warn, .network, "⚠️ [\(requestID)] \(httpResponse.statusCode) in \(latencyMs)ms: Rate Limited")
+                throw RadioBrowserError.rateLimited
+                
+            case 500...599:
+                // Try to reset mirror on server errors
+                RadioBrowserLogger.log(.error, .network, "❌ [\(requestID)] \(httpResponse.statusCode) in \(latencyMs)ms: Server Error")
+                await mirrorSelector.reset()
+                throw RadioBrowserError.serverUnavailable
+                
+            default:
+                // Try to decode error message if available
+                let errorMessage = String(data: data, encoding: .utf8) ?? "HTTP \(httpResponse.statusCode)"
+                RadioBrowserLogger.log(.error, .network, "❌ [\(requestID)] \(httpResponse.statusCode) in \(latencyMs)ms: \(errorMessage)")
+                throw RadioBrowserError.apiResponse(errorMessage)
+            }
+        } catch let error as RadioBrowserError {
+            let elapsed = Date().timeIntervalSince(startTime)
+            let latencyMs = Int(elapsed * 1000)
+            RadioBrowserLogger.log(.error, .network, "❌ [\(requestID)] Error in \(latencyMs)ms: \(error)")
+            throw error
+        } catch {
+            // Network errors
+            let elapsed = Date().timeIntervalSince(startTime)
+            let latencyMs = Int(elapsed * 1000)
+            RadioBrowserLogger.log(.error, .network, "❌ [\(requestID)] Transport error in \(latencyMs)ms: \(error.localizedDescription)")
+            throw RadioBrowserError.transport(error)
+        }
+    }
+    
     /// Performs a URL request and handles the response.
     /// - Parameter request: The URL request to perform.
     /// - Returns: Decoded response of type T.

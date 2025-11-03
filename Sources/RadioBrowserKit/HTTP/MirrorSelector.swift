@@ -80,8 +80,21 @@ internal actor MirrorSelector {
             
             // Pick a random mirror if available
             if let randomMirror = mirrors.randomElement() {
-                currentMirror = randomMirror.url
-                RadioBrowserLogger.log(.info, .mirrors, "Selected mirror: \(randomMirror.url ?? "unknown") (\(randomMirror.name))")
+                // Use URL if available, otherwise construct from name
+                if let url = randomMirror.url {
+                    currentMirror = url
+                    RadioBrowserLogger.log(.info, .mirrors, "Selected mirror: \(url) (\(randomMirror.name))")
+                } else {
+                    // Construct URL from name (assumes name is a hostname)
+                    let hostname = randomMirror.name
+                    // Check if hostname already has protocol
+                    if hostname.hasPrefix("http://") || hostname.hasPrefix("https://") {
+                        currentMirror = hostname
+                    } else {
+                        currentMirror = "https://\(hostname)"
+                    }
+                    RadioBrowserLogger.log(.info, .mirrors, "Selected mirror: \(currentMirror ?? "unknown") (\(randomMirror.name), constructed from name)")
+                }
             } else {
                 // Fall back to default if no mirrors found
                 RadioBrowserLogger.log(.warn, .mirrors, "No mirrors found, falling back to default: \(Self.fallbackBaseURL)")

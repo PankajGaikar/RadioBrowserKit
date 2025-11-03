@@ -511,10 +511,27 @@ public actor RadioBrowser {
     /// - Parameter stationUUID: The UUID of the station.
     /// - Returns: Click response with resolved URL.
     public func click(stationUUID: String) async throws -> ClickResponse {
-        // API returns Station array, extract first and convert to ClickResponse
-        let stations: [Station] = try await client.get(path: "/json/url/\(stationUUID)")
-        guard let station = stations.first else {
-            throw RadioBrowserError.apiResponse("Empty response from click endpoint")
+        // API may return Station array or single Station object
+        // Get raw data and check structure
+        let data = try await client.getData(path: "/json/url/\(stationUUID)")
+        
+        // Try to parse JSON to determine structure
+        let json = try JSONSerialization.jsonObject(with: data)
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .secondsSince1970
+        
+        let station: Station
+        if let array = json as? [[String: Any]], let first = array.first {
+            // It's an array - decode first element
+            let firstData = try JSONSerialization.data(withJSONObject: first)
+            station = try decoder.decode(Station.self, from: firstData)
+        } else if let dict = json as? [String: Any] {
+            // It's a single object
+            let dictData = try JSONSerialization.data(withJSONObject: dict)
+            station = try decoder.decode(Station.self, from: dictData)
+        } else {
+            throw RadioBrowserError.apiResponse("Unexpected response format from click endpoint")
         }
         
         return ClickResponse(
@@ -534,10 +551,50 @@ public actor RadioBrowser {
     /// - Parameter stationUUID: The UUID of the station.
     /// - Returns: Vote response with updated vote count.
     public func vote(stationUUID: String) async throws -> VoteResponse {
-        // API returns Station array, extract first and convert to VoteResponse
-        let stations: [Station] = try await client.get(path: "/json/vote/\(stationUUID)")
-        guard let station = stations.first else {
-            throw RadioBrowserError.apiResponse("Empty response from vote endpoint")
+        // API may return Station array or single Station object
+        // Get raw data and check structure
+        let data = try await client.getData(path: "/json/vote/\(stationUUID)")
+        
+        // Try to parse JSON to determine structure
+        let json = try JSONSerialization.jsonObject(with: data)
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .secondsSince1970
+        
+        let station: Station
+        if let array = json as? [[String: Any]], let first = array.first {
+            // It's an array - decode first element
+            let firstData = try JSONSerialization.data(withJSONObject: first)
+            station = try decoder.decode(Station.self, from: firstData)
+        } else if let dict = json as? [String: Any] {
+            // Check if it's an error response (has 'error' or 'message' but not 'stationuuid')
+            if dict["stationuuid"] == nil {
+                // Check for various error formats
+                var errorMsg: String?
+                // Check for VoteError key
+                if let voteError = dict["VoteError"] as? String {
+                    errorMsg = voteError
+                } else if let error = dict["error"] as? String {
+                    errorMsg = error
+                } else if let message = dict["message"] as? String {
+                    errorMsg = message
+                }
+                
+                if let msg = errorMsg {
+                    // Check if it's a rate limit error
+                    let lowerMsg = msg.lowercased()
+                    if lowerMsg.contains("rate") || lowerMsg.contains("too often") || lowerMsg.contains("voting") {
+                        throw RadioBrowserError.rateLimited
+                    }
+                    throw RadioBrowserError.apiResponse(msg)
+                }
+                throw RadioBrowserError.apiResponse("Unknown error from vote endpoint")
+            }
+            // It's a single Station object
+            let dictData = try JSONSerialization.data(withJSONObject: dict)
+            station = try decoder.decode(Station.self, from: dictData)
+        } else {
+            throw RadioBrowserError.apiResponse("Unexpected response format from vote endpoint")
         }
         
         return VoteResponse(

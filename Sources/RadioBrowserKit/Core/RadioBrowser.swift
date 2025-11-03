@@ -469,6 +469,37 @@ public actor RadioBrowser {
         return try await client.get(path: path)
     }
     
+    // MARK: - Advanced Search
+    
+    /// Performs an advanced search for stations using multiple filters.
+    /// - Parameters:
+    ///   - query: The search query with filters.
+    ///   - usePOST: Whether to use POST request (useful for long tagList arrays, default: false).
+    /// - Returns: Array of matching stations.
+    /// 
+    /// Use POST when you have a large `tagList` array to avoid URL length limits.
+    /// GET requests are generally preferred for simpler queries.
+    public func search(
+        _ query: StationSearchQuery,
+        usePOST: Bool = false
+    ) async throws -> [Station] {
+        if usePOST || query.tagList != nil {
+            // Use POST for tagList or when explicitly requested
+            return try await client.post(path: "/json/stations/search", body: query)
+        } else {
+            // Use GET with query parameters
+            return try await client.get(
+                path: "/json/stations/search",
+                order: query.order,
+                reverse: query.reverse,
+                offset: query.offset,
+                limit: query.limit,
+                hidebroken: query.hidebroken,
+                additionalParams: query.toQueryParams()
+            )
+        }
+    }
+    
     // MARK: - Service Info Endpoints
     
     /// Gets server statistics.

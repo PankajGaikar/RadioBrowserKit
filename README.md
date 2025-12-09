@@ -172,6 +172,23 @@ struct StationListView: View {
 }
 ```
 
+## Example Apps
+
+### MacRadio
+
+A beautiful, open-source Mac app for streaming radio stations from around the world, built with SwiftUI and powered by RadioBrowserKit.
+
+**Features:**
+- Browse and search thousands of radio stations
+- Country and region browsing with lazy loading
+- Advanced search filters
+- Favorites and recently played stations
+- Icecast metadata support
+- AirPlay support
+- Menu bar integration
+
+**Repository:** [https://github.com/PankajGaikar/MacRadio](https://github.com/PankajGaikar/MacRadio)
+
 ## API Overview
 
 ### Main Client
